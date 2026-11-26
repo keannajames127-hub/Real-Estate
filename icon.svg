@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Danish Home Properties">
+  <rect width="64" height="64" fill="#052b4f"/>
+  <circle cx="32" cy="27" r="19" fill="none" stroke="#faf3e3" stroke-width="1.6"/>
+  <path d="M19 29.5 L32 17 L45 29.5 L42 29.5 L42 42 L22 42 L22 29.5 Z" fill="#faf3e3"/>
+  <rect x="27" y="25" width="3.2" height="3.2" fill="#052b4f"/>
+  <rect x="33.8" y="25" width="3.2" height="3.2" fill="#052b4f"/>
+  <rect x="27" y="29.5" width="3.2" height="3.2" fill="#052b4f"/>
+  <rect x="33.8" y="29.5" width="3.2" height="3.2" fill="#052b4f"/>
+  <rect x="39" y="21" width="4" height="8.5" fill="#faf3e3"/>
+</svg>
