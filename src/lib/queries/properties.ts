@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import { asArray, coverImage } from "@/lib/utils";
 import type {
   ListingStatus,
@@ -134,7 +134,7 @@ function hydrate(row: Record<string, unknown>): PropertyWithImages {
 export async function searchProperties(
   filters: PropertyFilters = {},
 ): Promise<PropertySearchResult> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
 
   const page = Math.max(1, Math.floor(filters.page ?? 1));
   const pageSize = Math.max(1, Math.min(48, Math.floor(filters.pageSize ?? 9)));
@@ -204,7 +204,7 @@ export async function searchProperties(
 
 /** Featured listings for the homepage rail. */
 export async function getFeaturedProperties(limit = 6): Promise<PropertyWithImages[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`${CARD_COLUMNS}, property_images(${IMAGE_COLUMNS})`)
@@ -219,7 +219,7 @@ export async function getFeaturedProperties(limit = 6): Promise<PropertyWithImag
 
 /** Newest published listings. */
 export async function getRecentProperties(limit = 6): Promise<PropertyWithImages[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`${CARD_COLUMNS}, property_images(${IMAGE_COLUMNS})`)
@@ -233,7 +233,7 @@ export async function getRecentProperties(limit = 6): Promise<PropertyWithImages
 
 /** Highest-priced published listings. */
 export async function getLuxuryProperties(limit = 6): Promise<PropertyWithImages[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`${CARD_COLUMNS}, property_images(${IMAGE_COLUMNS})`)
@@ -264,7 +264,7 @@ export async function getLuxuryProperties(limit = 6): Promise<PropertyWithImages
 }
 
 export async function getPropertyBySlug(slug: string): Promise<PropertyWithImages | null> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`*, property_images(${IMAGE_COLUMNS})`)
@@ -281,7 +281,7 @@ const UUID_PATTERN =
 export async function getPropertyByIdOrSlug(
   idOrSlug: string,
 ): Promise<PropertyWithImages | null> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const column = UUID_PATTERN.test(idOrSlug) ? "id" : "slug";
   const { data, error } = await supabase
     .from("properties")
@@ -301,7 +301,7 @@ export async function getSimilarProperties(
   property: Pick<PropertyWithImages, "id" | "city" | "property_type">,
   limit = 3,
 ): Promise<PropertyWithImages[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
 
   const { data: sameCity } = await supabase
     .from("properties")
@@ -364,7 +364,7 @@ export interface NeighborhoodSummary {
  * separate table, so they can never drift out of sync with the catalogue.
  */
 export async function getNeighborhoods(limit = 8): Promise<NeighborhoodSummary[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select(
@@ -427,7 +427,7 @@ export async function getNeighborhoods(limit = 8): Promise<NeighborhoodSummary[]
 
 /** Distinct cities in the catalogue, for the search bar's datalist. */
 export async function getAvailableCities(): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select("city")
@@ -444,7 +444,7 @@ export async function getAvailableCities(): Promise<string[]> {
 }
 
 export async function countPublishedProperties(): Promise<number> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { count } = await supabase
     .from("properties")
     .select("id", { count: "exact", head: true })
@@ -456,7 +456,7 @@ export async function countPublishedProperties(): Promise<number> {
 export async function listPublishedSlugs(): Promise<
   { slug: string; updated_at: string }[]
 > {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("properties")
     .select("slug, updated_at")

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import type { AdminUser, Agent, PublicSiteSettings, SiteSettings } from "@/types/database";
 
 const DEFAULT_PUBLIC_SETTINGS: PublicSiteSettings = {
@@ -28,7 +28,7 @@ const DEFAULT_PUBLIC_SETTINGS: PublicSiteSettings = {
  */
 export async function getPublicSettings(): Promise<PublicSiteSettings> {
   try {
-    const supabase = await createClient();
+    const supabase = await createPublicClient();
     const { data, error } = await supabase
       .from("public_site_settings")
       .select("*")
@@ -57,7 +57,7 @@ export async function getAdminSettings(): Promise<SiteSettings | null> {
 }
 
 export async function getActiveAgents(): Promise<Agent[]> {
-  const supabase = await createClient();
+  const supabase = await createPublicClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")

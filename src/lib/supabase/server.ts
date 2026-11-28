@@ -1,9 +1,10 @@
 import "server-only";
 
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
+import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from "@/lib/env";
 import { createPreviewClient, isPreviewMode } from "@/lib/supabase/preview";
 
 /**
@@ -42,3 +43,31 @@ export async function createClient() {
     },
   });
 }
+
+/**
+ * Client for the public storefront.
+ *
+ * A deployment can end up with a database connected but empty — for example
+ * when credentials are provided before the migrations and seed have been run.
+ * Rather than showing an empty catalogue, the storefront then serves the
+ * content bundle compiled into the app. As soon as the database holds at least
+ * one published listing, the database wins unconditionally.
+ */
+export const createPublicClient = cache(async () => {
+  const supabase = await createClient();
+
+  if (!isSupabaseConfigured()) return supabase;
+
+  try {
+    const { count } = await supabase
+      .from("properties")
+      .select("id", { count: "exact", head: true })
+      .eq("is_published", true);
+
+    if ((count ?? 0) > 0) return supabase;
+  } catch {
+    // Database unreachable — serve the bundled content instead of an error page.
+  }
+
+  return createPreviewClient();
+});
