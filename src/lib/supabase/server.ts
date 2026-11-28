@@ -45,6 +45,28 @@ export async function createClient() {
 }
 
 /**
+ * True when the site is served the content bundle compiled into the app: either
+ * because no database credentials exist, or because the attached database holds
+ * no published listings yet.
+ */
+export const servesBundledContent = cache(async () => {
+  if (!isSupabaseConfigured()) return true;
+
+  try {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("properties")
+      .select("id", { count: "exact", head: true })
+      .eq("is_published", true);
+
+    return (count ?? 0) === 0;
+  } catch {
+    // Database unreachable — serve the bundled content instead of an error page.
+    return true;
+  }
+});
+
+/**
  * Client for the public storefront.
  *
  * A deployment can end up with a database connected but empty — for example
@@ -53,21 +75,18 @@ export async function createClient() {
  * content bundle compiled into the app. As soon as the database holds at least
  * one published listing, the database wins unconditionally.
  */
-export const createPublicClient = cache(async () => {
-  const supabase = await createClient();
+export const createPublicClient = cache(async () =>
+  (await servesBundledContent()) ? createPreviewClient() : createClient(),
+);
 
-  if (!isSupabaseConfigured()) return supabase;
-
-  try {
-    const { count } = await supabase
-      .from("properties")
-      .select("id", { count: "exact", head: true })
-      .eq("is_published", true);
-
-    if ((count ?? 0) > 0) return supabase;
-  } catch {
-    // Database unreachable — serve the bundled content instead of an error page.
-  }
-
-  return createPreviewClient();
-});
+/**
+ * Client for the signed-in dashboard.
+ *
+ * The panel follows the same rule as the storefront: while the database is still
+ * empty it reads the bundled content, so it can be reviewed rather than showing
+ * an empty room. Writes stay refused in production, so the panel never pretends
+ * to keep a change it cannot store.
+ */
+export const createDashboardClient = cache(async () =>
+  (await servesBundledContent()) ? createPreviewClient() : createClient(),
+);

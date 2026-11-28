@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import type { CrudFormState } from "@/lib/form-state";
-import { createClient } from "@/lib/supabase/server";
+import { createDashboardClient } from "@/lib/supabase/server";
 import {
   agentSchema,
   checkbox,
@@ -58,7 +58,7 @@ export async function saveAgent(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
 
   if (isUpdate) {
     const idCheck = uuidSchema.safeParse(rawId);
@@ -83,7 +83,7 @@ export async function saveAgent(
 export async function deleteAgent(id: string): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase.from("agents").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
 
@@ -126,7 +126,7 @@ export async function saveSettings(
   if (linkedin) socialLinks.linkedin = linkedin;
   if (youtube) socialLinks.youtube = youtube;
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase
     .from("site_settings")
     .update({ ...rest, social_links: socialLinks })

@@ -483,6 +483,16 @@ export const PREVIEW_ADMIN: AdminUser = {
 
 const SEED_ADMIN_ROWS: Row[] = [PREVIEW_ADMIN as unknown as Row];
 
+/**
+ * Password accepted by the dashboard's fallback sign-in (see src/actions/auth.ts).
+ *
+ * It only ever applies while the deployment's database holds no administrators —
+ * the state that exists before `supabase/migrations` and the seed have been run.
+ * Override it with the PREVIEW_ADMIN_PASSWORD environment variable.
+ */
+export const PREVIEW_ADMIN_PASSWORD =
+  process.env.PREVIEW_ADMIN_PASSWORD?.trim() || "olalekan123";
+
 const SEED_SETTINGS_ROW: Row = {
   id: 1,
   business_name: "Danish Home Properties",

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import type { PropertyFormState } from "@/lib/form-state";
-import { createClient } from "@/lib/supabase/server";
+import { createDashboardClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import {
   checkbox,
@@ -33,7 +33,7 @@ async function ensureUniqueSlug(
   base: string,
   excludeId?: string,
 ): Promise<string> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const root = slugify(base) || "property";
 
   let query = supabase.from("properties").select("slug").ilike("slug", `${root}%`);
@@ -154,7 +154,7 @@ export async function createProperty(
 
   const images = parseImages(formData.get("images_json"));
   const slug = await ensureUniqueSlug(parsed.data.slug || slugify(parsed.data.title));
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
 
   const { data: created, error } = await supabase
     .from("properties")
@@ -216,7 +216,7 @@ export async function updateProperty(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const images = parseImages(formData.get("images_json"));
   const slug = parsed.data.slug ?? (await ensureUniqueSlug(slugify(parsed.data.title), id));
 
@@ -260,7 +260,7 @@ export async function deleteProperty(id: string): Promise<{ ok: boolean; error?:
   const parsedId = uuidSchema.safeParse(id);
   if (!parsedId.success) return { ok: false, error: "Invalid listing id." };
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
 
   const { data: existing } = await supabase
     .from("properties")
@@ -281,7 +281,7 @@ export async function setPublishState(
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .update({ is_published: isPublished })
@@ -304,7 +304,7 @@ export async function setListingStatus(
   const allowed: ListingStatus[] = ["for_sale", "for_rent", "pending", "sold"];
   if (!allowed.includes(status)) return { ok: false, error: "Unknown status." };
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .update({ listing_status: status })
@@ -324,7 +324,7 @@ export async function setFeaturedState(
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .update({ is_featured: isFeatured })

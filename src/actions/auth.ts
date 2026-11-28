@@ -1,15 +1,17 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { getAdminSession, requireAdmin } from "@/lib/auth";
-import { getSiteUrl } from "@/lib/env";
+import { getSiteUrl, isSupabaseConfigured } from "@/lib/env";
 import type { AuthFormState } from "@/lib/form-state";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { PREVIEW_ADMIN, PREVIEW_ADMIN_PASSWORD } from "@/lib/supabase/preview";
+import { PREVIEW_ADMIN_COOKIE } from "@/lib/supabase/preview-cookie";
+import { createClient, servesBundledContent } from "@/lib/supabase/server";
 import {
   fieldErrors,
   formDataToObject,
@@ -58,6 +60,33 @@ export async function signInWithCredentials(
       status: "error",
       message: "Too many sign-in attempts. Please wait a few minutes and try again.",
     };
+  }
+
+  // A deployment can have a database attached that is still empty — for example
+  // when the credentials were provided before the migrations and seed were run.
+  // There are then no administrators to authenticate against, so the bundled
+  // content's administrator is accepted instead, with the documented demo
+  // credentials. This stops applying the moment the database holds any listing.
+  if (isSupabaseConfigured() && (await servesBundledContent())) {
+    const matchesDemoAdmin =
+      (identifier === PREVIEW_ADMIN.username ||
+        identifier.toLowerCase() === PREVIEW_ADMIN.email.toLowerCase()) &&
+      password === PREVIEW_ADMIN_PASSWORD;
+
+    if (!matchesDemoAdmin) {
+      return { status: "error", message: "Incorrect username or password." };
+    }
+
+    (await cookies()).set(PREVIEW_ADMIN_COOKIE, "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    revalidatePath("/admin");
+    redirect(safeRedirectTarget(next));
   }
 
   const supabase = await createClient();
@@ -110,6 +139,7 @@ export async function signInWithCredentials(
 }
 
 export async function signOutAction(): Promise<void> {
+  (await cookies()).delete(PREVIEW_ADMIN_COOKIE);
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/admin/login");

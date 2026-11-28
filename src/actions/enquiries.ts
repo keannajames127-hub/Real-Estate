@@ -8,7 +8,7 @@ import { sendEnquiryNotification } from "@/lib/email";
 import type { EnquiryFormState } from "@/lib/form-state";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createDashboardClient } from "@/lib/supabase/server";
 import { enquirySchema, enquiryUpdateSchema, fieldErrors, formDataToObject } from "@/lib/validation/schemas";
 import type { EnquiryStatus } from "@/types/database";
 import { getSiteUrl } from "@/lib/env";
@@ -183,7 +183,7 @@ export async function updateEnquiryStatus(
     return { ok: false, error: "Unknown status" };
   }
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase
     .from("enquiries")
     .update({ status: parsed.data.status })
@@ -208,7 +208,7 @@ export async function addEnquiryNote(
     return { ok: false, error: "Write something first." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase.from("enquiry_notes").insert({
     enquiry_id: enquiryId,
     author_id: session.admin.id,
@@ -228,7 +228,7 @@ export async function deleteEnquiryNote(
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase.from("enquiry_notes").delete().eq("id", noteId);
 
   if (error) return { ok: false, error: error.message };
@@ -240,7 +240,7 @@ export async function deleteEnquiryNote(
 export async function deleteEnquiry(enquiryId: string): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { error } = await supabase.from("enquiries").delete().eq("id", enquiryId);
 
   if (error) return { ok: false, error: error.message };

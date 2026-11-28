@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createDashboardClient } from "@/lib/supabase/server";
 import { asArray } from "@/lib/utils";
 import type {
   ListingStatus,
@@ -89,7 +89,7 @@ function hydrate(row: Record<string, unknown>): PropertyWithImages {
 export async function listAdminProperties(
   filters: AdminPropertyFilters = {},
 ): Promise<AdminPropertyListResult> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
 
   const page = Math.max(1, Math.floor(filters.page ?? 1));
   const pageSize = Math.max(1, Math.min(100, Math.floor(filters.pageSize ?? 12)));
@@ -138,7 +138,7 @@ export async function listAdminProperties(
 }
 
 export async function getAdminProperty(id: string): Promise<PropertyWithImages | null> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`${FULL_COLUMNS}, property_images(${IMAGE_COLUMNS})`)
@@ -153,7 +153,7 @@ export async function getAdminProperty(id: string): Promise<PropertyWithImages |
 export async function getRecentlyUpdatedProperties(
   limit = 5,
 ): Promise<PropertyWithImages[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .select(`${FULL_COLUMNS}, property_images(${IMAGE_COLUMNS})`)
@@ -168,7 +168,7 @@ export async function getRecentlyUpdatedProperties(
 export async function getPropertyOptions(): Promise<
   Array<{ id: string; title: string; city: string; state: string }>
 > {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("properties")
     .select("id, title, city, state")

@@ -52,7 +52,14 @@ export function getServiceRoleKey(): string {
 export function getSiteUrl(): string {
   const configured = read("NEXT_PUBLIC_SITE_URL");
   if (configured) return configured.replace(/\/+$/, "");
-  if (read("VERCEL_URL")) return `https://${read("VERCEL_URL")}`;
+
+  // Vercel always exposes the deployment's own host, and the aliased production
+  // host once one exists. Preferring them keeps canonical tags, /sitemap.xml and
+  // /robots.txt pointing at the real domain instead of localhost when
+  // NEXT_PUBLIC_SITE_URL has not been set.
+  const vercelHost = read("VERCEL_PROJECT_PRODUCTION_URL") || read("VERCEL_URL");
+  if (vercelHost) return `https://${vercelHost.replace(/\/+$/, "")}`;
+
   return "http://localhost:3000";
 }
 

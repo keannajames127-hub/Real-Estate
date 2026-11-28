@@ -1,11 +1,13 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, servesBundledContent } from "@/lib/supabase/server";
 import { PREVIEW_ADMIN } from "@/lib/supabase/preview";
+import { PREVIEW_ADMIN_COOKIE } from "@/lib/supabase/preview-cookie";
 import type { AdminUser } from "@/types/database";
 
 export interface AdminSession {
@@ -14,6 +16,14 @@ export interface AdminSession {
     email: string;
   };
   admin: AdminUser;
+}
+
+/** The sample administrator the fallback sign-in signs in as. */
+function previewSession(): AdminSession {
+  return {
+    user: { id: PREVIEW_ADMIN.id, email: PREVIEW_ADMIN.email },
+    admin: PREVIEW_ADMIN,
+  };
 }
 
 /**
@@ -30,12 +40,7 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
   // Without credentials there cannot be a real session. Rather than lock the
   // dashboard away entirely, sign in as the sample administrator so the panel
   // can be reviewed — see src/lib/supabase/preview.ts.
-  if (!isSupabaseConfigured()) {
-    return {
-      user: { id: PREVIEW_ADMIN.id, email: PREVIEW_ADMIN.email },
-      admin: PREVIEW_ADMIN,
-    };
-  }
+  if (!isSupabaseConfigured()) return previewSession();
 
   const supabase = await createClient();
 
@@ -44,21 +49,33 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) return null;
+  if (!userError && user) {
+    const { data: admin, error: adminError } = await supabase
+      .from("admin_users")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle<AdminUser>();
 
-  const { data: admin, error: adminError } = await supabase
-    .from("admin_users")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle<AdminUser>();
+    // Deliberately no fallback here: a genuine signed-in account that is not an
+    // active administrator is rejected outright.
+    if (adminError || !admin || !admin.is_active) return null;
 
-  if (adminError || !admin) return null;
-  if (!admin.is_active) return null;
+    return {
+      user: { id: user.id, email: user.email ?? admin.email },
+      admin,
+    };
+  }
 
-  return {
-    user: { id: user.id, email: user.email ?? admin.email },
-    admin,
-  };
+  // A database that is connected but still empty has no administrators to
+  // authenticate against. The fallback sign-in (see src/actions/auth.ts) leaves
+  // a cookie behind; honour it while — and only while — the bundled content is
+  // still what the site serves.
+  if (await servesBundledContent()) {
+    const cookieStore = await cookies();
+    if (cookieStore.get(PREVIEW_ADMIN_COOKIE)?.value === "1") return previewSession();
+  }
+
+  return null;
 });
 
 /**

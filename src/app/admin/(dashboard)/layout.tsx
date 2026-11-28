@@ -4,8 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { canManageTeam, requireAdmin } from "@/lib/auth";
 import { isLocalTestMode } from "@/lib/env";
 import { getPublicSettings } from "@/lib/queries/settings";
-import { createClient } from "@/lib/supabase/server";
-import { isPreviewMode } from "@/lib/supabase/preview";
+import { createDashboardClient, servesBundledContent } from "@/lib/supabase/server";
 
 export const metadata = {
   title: { default: "Dashboard", template: "%s · Admin" },
@@ -22,11 +21,13 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const session = await requireAdmin();
   const settings = await getPublicSettings();
 
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { count } = await supabase
     .from("enquiries")
     .select("id", { count: "exact", head: true })
     .eq("status", "new");
+
+  const bundled = await servesBundledContent();
 
   return (
     <AdminShell
@@ -36,7 +37,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       newEnquiries={count ?? 0}
       canManageTeam={canManageTeam(session)}
     >
-      {isPreviewMode() ? (
+      {bundled ? (
         <div className="mb-8 border border-gold/40 bg-gold-pale/40 px-5 py-4">
           <p className="font-sans text-[0.78rem] leading-relaxed text-ink">
             <span className="font-medium uppercase tracking-[0.16em] text-gold">
@@ -45,7 +46,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
             {" — "}
             {isLocalTestMode()
               ? "property, enquiry and settings changes are saved on this PC only, along with uploaded photos. They are not sent to a live website."
-              : "showing sample data. Changes are read-only until a live database and storage provider are configured."}
+              : "showing the sample catalogue. Saving is disabled until this site is connected to a live database and storage provider."}
           </p>
         </div>
       ) : null}

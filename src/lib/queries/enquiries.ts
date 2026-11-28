@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createDashboardClient } from "@/lib/supabase/server";
 import type {
   DashboardStats,
   EnquiryNote,
@@ -101,7 +101,7 @@ function buildFilters<T extends {
 export async function searchEnquiries(
   filters: EnquiryFilters = {},
 ): Promise<EnquirySearchResult> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
 
   const page = Math.max(1, Math.floor(filters.page ?? 1));
   const pageSize = Math.max(1, Math.min(100, Math.floor(filters.pageSize ?? 20)));
@@ -140,7 +140,7 @@ export async function searchEnquiries(
 export async function getEnquiriesForExport(
   filters: EnquiryFilters = {},
 ): Promise<EnquiryWithProperty[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const base = supabase
     .from("enquiries")
     .select(`${ENQUIRY_COLUMNS}, ${PROPERTY_EMBED}`)
@@ -154,7 +154,7 @@ export async function getEnquiriesForExport(
 }
 
 export async function getEnquiryById(id: string): Promise<EnquiryWithProperty | null> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("enquiries")
     .select(`${ENQUIRY_COLUMNS}, ${PROPERTY_EMBED}`)
@@ -166,7 +166,7 @@ export async function getEnquiryById(id: string): Promise<EnquiryWithProperty | 
 }
 
 export async function getEnquiryNotes(enquiryId: string): Promise<EnquiryNote[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("enquiry_notes")
     .select("*")
@@ -178,7 +178,7 @@ export async function getEnquiryNotes(enquiryId: string): Promise<EnquiryNote[]>
 }
 
 export async function getRecentEnquiries(limit = 5): Promise<EnquiryWithProperty[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("enquiries")
     .select(`${ENQUIRY_COLUMNS}, ${PROPERTY_EMBED}`)
@@ -191,7 +191,7 @@ export async function getRecentEnquiries(limit = 5): Promise<EnquiryWithProperty
 
 /** Aggregate counters for the dashboard overview. */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
   const countOf = (table: "properties" | "enquiries") =>

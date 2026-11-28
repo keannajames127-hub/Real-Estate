@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient, createPublicClient } from "@/lib/supabase/server";
+import { createDashboardClient, createPublicClient } from "@/lib/supabase/server";
 import type { AdminUser, Agent, PublicSiteSettings, SiteSettings } from "@/types/database";
 
 const DEFAULT_PUBLIC_SETTINGS: PublicSiteSettings = {
@@ -45,7 +45,7 @@ export async function getPublicSettings(): Promise<PublicSiteSettings> {
 
 /** Full settings row, including the notification address. Admins only (RLS). */
 export async function getAdminSettings(): Promise<SiteSettings | null> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("site_settings")
     .select("*")
@@ -70,7 +70,7 @@ export async function getActiveAgents(): Promise<Agent[]> {
 }
 
 export async function getAllAgents(): Promise<Agent[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")
@@ -83,7 +83,7 @@ export async function getAllAgents(): Promise<Agent[]> {
 
 /** Every administrator, newest first. RLS restricts this to signed-in admins. */
 export async function listAdminUsers(): Promise<AdminUser[]> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("admin_users")
     .select("*")
@@ -94,7 +94,7 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
 }
 
 export async function getAgentById(id: string): Promise<Agent | null> {
-  const supabase = await createClient();
+  const supabase = await createDashboardClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")

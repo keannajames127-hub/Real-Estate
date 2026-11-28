@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { PREVIEW_ADMIN_COOKIE } from "@/lib/supabase/preview-cookie";
+
 /** Routes that must stay reachable without a session. */
 const PUBLIC_ADMIN_ROUTES = [
   "/admin/login",
@@ -69,7 +71,12 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthCallback = pathname.startsWith("/auth");
 
-  if (!user && !isPublicAdminRoute(pathname) && !isAuthCallback) {
+  // The dashboard's fallback sign-in (used while the attached database is empty)
+  // does not create a Supabase session, so its cookie is accepted as one here.
+  // The authoritative check in `requireAdmin()` still decides what is rendered.
+  const hasPreviewSession = request.cookies.get(PREVIEW_ADMIN_COOKIE)?.value === "1";
+
+  if (!user && !hasPreviewSession && !isPublicAdminRoute(pathname) && !isAuthCallback) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/login";
     redirectUrl.search = "";
