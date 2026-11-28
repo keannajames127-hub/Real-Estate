@@ -8,6 +8,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured } from "@/lib/env";
 import type { AdminUser } from "@/types/database";
 
+import { BUNDLED_CONTENT } from "./preview-content";
+
 /**
  * Offline preview stand-in.
  *
@@ -541,9 +543,20 @@ function syncRelatedRows(): void {
   );
 }
 
+/** Tables the deployed content bundle supplies when no database is attached. */
+const BUNDLED_TABLES = ["properties", "property_images", "agents", "site_settings"] as const;
+
 function loadLocalStore(force = false): void {
   if (localStoreLoaded && !force) return;
   localStoreLoaded = true;
+
+  // A deployment with no database attached serves the content bundle compiled
+  // into the app, so the storefront still shows the real listings instead of an
+  // empty catalogue. Writes stay refused outside development.
+  for (const table of BUNDLED_TABLES) {
+    TABLES[table] = BUNDLED_CONTENT[table];
+  }
+
   if (process.env.NODE_ENV === "production" || !existsSync(LOCAL_STORE_FILE)) {
     syncRelatedRows();
     return;
